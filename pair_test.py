@@ -54,29 +54,34 @@ def pair_sample_test(x, y,confidence=0.95):
 def get_parameter():
     print ("length:{}, content：{}".format(len(argv),argv))
     file_path = argv[argv.index('--file_path')+1]     
+    try:
+        df = get_data_hdfs(file_path)
+    except Exception as e:
+        print(e,'Can not get data from hdfs, use test data from lacal' )
+        df = pd.read_csv(file_path)  #
     if "--confidence" not in argv:        
         confidence = 0.95
     else:
         confidence = float("%.2f"%float(argv[argv.index('--confidence')+1])) 
-    return file_path, confidence
+    return df, confidence
 
-def main(file_path, confidence):
-#    df = pd.read_csv(file_path)
-    df = get_data_hdfs(file_path)
+def main(df, confidence, outfilename='pair'):
+
     x = df.iloc[:,0]
     y = df.iloc[:,1]
     pair_sample_statistics_res = pair_sample_statistics(x,y)
     pair_sample_test_res = pair_sample_test(x, y, confidence)
     res = pd.concat([pair_sample_statistics_res, pair_sample_test_res])
     print(res)
-    res.to_csv('output/' + re.findall('([^/]*).csv', file_path)[0] + '_res.csv', header=False)
+    res.to_csv('test_data/output/' + outfilename + '_res.csv', header=False)
     return res
 
 if __name__=="__main__":
-
-#    data = pd.DataFrame({'x':[20.5, 18.8, 19.8, 20.9, 21.5, 19.5, 21.0, 21.2],'y':[17.7, 20.3, 20.0, 18.8, 19.0, 20.1, 20.0, 19.1]})
-#    file_path, confidence = "./input/pari_test.csv", 0.95 #local test 
+#    local test 
+#    df = pd.DataFrame({'x':[20.5, 18.8, 19.8, 20.9, 21.5, 19.5, 21.0, 21.2],'y':[17.7, 20.3, 20.0, 18.8, 19.0, 20.1, 20.0, 19.1]})
+#    confidence = 0.95 
+#    res = main(df, confidence)  
     
-    file_path, confidence = get_parameter()
-    res = main(file_path, confidence)
-    cmd = "python pair_test.py --file_path ./input/pari_test.csv --confidence 0.95"     
+    df, confidence = get_parameter()
+    res = main(df, confidence)
+    cmd = "python pair_test.py --file_path ./test_data/input/pari_test.csv --confidence 0.95"     

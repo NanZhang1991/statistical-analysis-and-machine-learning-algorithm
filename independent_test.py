@@ -62,31 +62,35 @@ def independent_sample_test(x, y, confidence=0.95):
 
 def get_parameter():
     print ("length:{}, content：{}".format(len(argv),argv))
-    file_path = argv[argv.index('--file_path')+1]     
+    file_path = argv[argv.index('--file_path')+1]
+    try:
+        df = get_data_hdfs(file_path)
+    except Exception as e:
+        print(e,'Can not get data from hdfs, use test data from lacal' )
+        df = pd.read_csv(file_path)  #  
     if "--confidence" not in argv:        
         confidence = 0.95
     else:
         confidence = float("%.2f"%float(argv[argv.index('--confidence')+1])) 
-    return file_path, confidence
+    return df, confidence
 
-def main(file_path, confidence):  
-#    df = pd.read_csv(file_path)
-    df = get_data_hdfs(file_path)
+def main(df, confidence, outfilename='ind'):  
     x = df.iloc[:,0]
     y = df.iloc[:,1]
     gs_res = group_statistics(x,y)
     ist_res = independent_sample_test(x, y, confidence)
     res = pd.concat([gs_res, ist_res])
     print(res)
-    res.to_csv('output/' + re.findall('([^/]*).csv', file_path)[0] + '_res.csv', header=False)
+    res.to_csv('test_data/output/' + outfilename + '_res.csv', header=False)
     return res
 
 
 if __name__=="__main__":
-
-#    data = pd.DataFrame({'x':[20.5, 19.8, 19.7, 20.4, 20.1, 20.0, 19.0, 19.9],'y':[20.7, 19.8, 19.5, 20.8, 20.4, 19.6, 20.2, None]})
-#    file_path, confidence = "./input/independent_test.csv", 0.95 #local test     
+    #local test 
+#    df = pd.DataFrame({'x':[20.5, 19.8, 19.7, 20.4, 20.1, 20.0, 19.0, 19.9],'y':[20.7, 19.8, 19.5, 20.8, 20.4, 19.6, 20.2, None]})
+#    confidence =  0.95     
+#    res = main(df, confidence)
     
-    file_path, confidence = get_parameter()
-    res = main(file_path, confidence)
-    cmd = "python independent_test.py --file_path ./input/independent_test.csv --confidence 0.95"
+    df, confidence = get_parameter()
+    res = main(df, confidence)
+    cmd = "python independent_test.py --file_path ./test_data/input/independent_test.csv --confidence 0.95" 

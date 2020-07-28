@@ -55,32 +55,37 @@ Cohen's d > 0.8时，说明效应较大(差异幅度较大)。
 def get_parameter():
     print ("length:{}, content：{}".format(len(argv),argv))
     file_path = argv[argv.index('--file_path')+1]
+    try:
+        df = get_data_hdfs(file_path)
+    except Exception as e:
+        print(e,'Can not get data from hdfs, use test data from local' )
+        df = pd.read_csv(file_path)  #local test
     pop_mean = int(argv[argv.index('--pop_mean')+1])     
     if "--confidence" not in argv:        
         confidence = 0.95
     else:
         confidence = float("%.2f"%float(argv[argv.index('--confidence')+1])) 
-    return file_path, pop_mean, confidence
+    return df, pop_mean, confidence
         
-def main(file_path, pop_mean, confidence):
-#    df = pd.read_csv(file_path)
-    df = get_data_hdfs(file_path)   
+def main(df, pop_mean, confidence, outfilename='sst'):
     dataSer = df.iloc[:,0]
     print(dataSer.name)
     single_sample_statistics_res = single_sample_statistics(dataSer)
     single_sample_test_res = single_sample_test(dataSer,pop_mean,confidence)
     res = pd.concat([single_sample_statistics_res, single_sample_test_res])
     print(res)
-    res.to_csv('output/'+ re.findall('([^/]*).csv', file_path)[0] + '_res.csv', header=False)
+    res.to_csv('test_data/output/'+ outfilename + '_res.csv', header=False)
     return res
 
 
 if __name__=="__main__":
-#    data = pd.DataFrame({'test':[15.6,16.2,22.5,20.5,16.4,19.4,16.6,17.9,12.7,13.9]})
-#    file_path, pop_mean, confidence = './input/ssg_test.csv', 20, 0.95 #local test 
+#    local test 
+#    df = pd.DataFrame({'test':[15.6,16.2,22.5,20.5,16.4,19.4,16.6,17.9,12.7,13.9]})
+#    pop_mean, confidence =  20, 0.95 
+#    res = main(df, pop_mean, confidence)
     
-    file_path, pop_mean, confidence = get_parameter()
-    res = main(file_path, pop_mean, confidence)
-    cmd = "python single_sample_test.py --file_path ./input/ssg_test.csv --pop_mean 20 --confidence 0.95" 
+    df, pop_mean, confidence = get_parameter()
+    res = main(df, pop_mean, confidence)
+    cmd = "python single_sample_test.py --file_path ./test_data/input/ssg_test.csv --pop_mean 20 --confidence 0.95" 
     
 

@@ -93,26 +93,34 @@ def JBtest(x):
                        index=["正态性检验", 'JB test'])
     return res
 
+def get_parameter():
+    print ("length:{}, content：{}".format(len(argv),argv))
+    file_path = argv[argv.index('--file_path')+1]  
+    try:
+        df = get_data_hdfs(file_path)
+    except Exception as e:
+        print(e,'Can not get data from hdfs, use test data from lacal' )
+        df = pd.read_csv(file_path)  #
+    return df
  
-def main(df):   
+def main(df, outfilename='nor'):   
     x = df.iloc[:,0]
     normaltest_res = normaltest(x)
     JBtest_res = JBtest(x)
     res = pd.concat([normaltest_res, JBtest_res])
-    res.to_csv('./test_data/output/'+ re.findall('([^/]*).csv', file_path)[0] + '_res.csv', header=False)
+    res.to_csv('./test_data/output/'+ outfilename + '_res.csv', header=False)
     print(res)
     return res
     
     
 if __name__=="__main__":
-
-#    data = pd.DataFrame({'x':np.linspace(0, 10, 100)})
-    file_path = "./test_data/input/normal_test.csv"#local test 
-    df = pd.read_csv(file_path)      
-#    file_path = argv[argv.index('--file_path')+1] 
-#    df = get_data_hdfs(file_path) 
+#    local test 
+#    df = pd.DataFrame({'x':np.linspace(0, 10, 100)})
+#    res = main(df)   
+    
+    df = get_parameter()
     res = main(df)
-    cmd = "python inormal_test.py --file_path ./test_data/input/normal_test.csv"    
+    cmd = "python normal_test.py --file_path ./test_data/input/normal_test.csv"    
     
 
  
