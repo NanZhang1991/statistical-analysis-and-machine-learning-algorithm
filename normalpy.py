@@ -94,14 +94,12 @@ def JBtest(x):
     return res
 
  
-def main(file_path):
-#    df = pd.read_csv(file_path)
-    df = get_data_hdfs(file_path)   
+def main(df):   
     x = df.iloc[:,0]
     normaltest_res = normaltest(x)
     JBtest_res = JBtest(x)
     res = pd.concat([normaltest_res, JBtest_res])
-    res.to_csv('output/'+ re.findall('([^/]*).csv', file_path)[0] + '_res.csv', header=False)
+    res.to_csv('./test_data/output/'+ re.findall('([^/]*).csv', file_path)[0] + '_res.csv', header=False)
     print(res)
     return res
     
@@ -109,11 +107,12 @@ def main(file_path):
 if __name__=="__main__":
 
 #    data = pd.DataFrame({'x':np.linspace(0, 10, 100)})
-#    file_path = "./input/normal_test.csv"#local test 
-    
-    file_path = argv[argv.index('--file_path')+1] 
-    res = main(file_path)
-    cmd = "python inormal_test.py --file_path ./input/normal_test.csv"    
+    file_path = "./test_data/input/normal_test.csv"#local test 
+    df = pd.read_csv(file_path)      
+#    file_path = argv[argv.index('--file_path')+1] 
+#    df = get_data_hdfs(file_path) 
+    res = main(df)
+    cmd = "python inormal_test.py --file_path ./test_data/input/normal_test.csv"    
     
 
  
