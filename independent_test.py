@@ -9,7 +9,6 @@ import pandas as pd
 import numpy as np
 import scipy.stats as stats
 import statsmodels.stats.weightstats as st
-import re
 from sys import argv
 from hdfs.client import Client
 
@@ -66,7 +65,7 @@ def get_parameter():
     try:
         df = get_data_hdfs(file_path)
     except Exception as e:
-        print(e,'Can not get data from hdfs, use test data from lacal' )
+        print(e,'Can not get data from hdfs, use test data from local' )
         df = pd.read_csv(file_path)  #  
     if "--confidence" not in argv:        
         confidence = 0.95

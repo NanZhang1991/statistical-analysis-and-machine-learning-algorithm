@@ -14,7 +14,7 @@ import pandas as pd
 from scipy import stats
 from hdfs.client import Client
 from sys import argv
-import re
+
 
 def get_data_hdfs(file_path):    
     HDFSUrl = "http://192.168.0.201:50070"
@@ -99,7 +99,7 @@ def get_parameter():
     try:
         df = get_data_hdfs(file_path)
     except Exception as e:
-        print(e,'Can not get data from hdfs, use test data from lacal' )
+        print(e,'Can not get data from hdfs, use test data from local' )
         df = pd.read_csv(file_path)  #
     return df
  

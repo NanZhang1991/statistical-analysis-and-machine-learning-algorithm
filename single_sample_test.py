@@ -3,8 +3,7 @@
 
 
 import pandas as pd
-from scipy import stats
-import re 
+from scipy import stats 
 from sys import argv
 from hdfs.client import Client
 
