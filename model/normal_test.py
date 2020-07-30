@@ -108,7 +108,7 @@ def main(df, outfilename='nor'):
     normaltest_res = normaltest(x)
     JBtest_res = JBtest(x)
     res = pd.concat([normaltest_res, JBtest_res])
-    res.to_csv('./test_data/output/'+ outfilename + '_res.csv', header=False)
+    res.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/'+ outfilename + '_res.csv', header=False)
     print(res)
     return res
     
@@ -120,7 +120,7 @@ if __name__=="__main__":
     
     df = get_parameter()
     res = main(df)
-    cmd = "python normal_test.py --file_path ./test_data/input/normal_test.csv"    
+    cmd = "python normal_test.py --file_path C:/Users/YJ001/Desktop/project/algorithm/test_data/input/normal_test.csv"    
     
 
  

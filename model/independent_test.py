@@ -80,7 +80,7 @@ def main(df, confidence, outfilename='ind'):
     ist_res = independent_sample_test(x, y, confidence)
     res = pd.concat([gs_res, ist_res])
     print(res)
-    res.to_csv('test_data/output/' + outfilename + '_res.csv', header=False)
+    res.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/' + outfilename + '_res.csv', header=False)
     return res
 
 
@@ -92,4 +92,4 @@ if __name__=="__main__":
     
     df, confidence = get_parameter()
     res = main(df, confidence)
-    cmd = "python independent_test.py --file_path ./test_data/input/independent_test.csv --confidence 0.95" 
+    cmd = "python independent_test.py --file_path C:/Users/YJ001/Desktop/project/algorithm/test_data/input/independent_test.csv --confidence 0.95" 

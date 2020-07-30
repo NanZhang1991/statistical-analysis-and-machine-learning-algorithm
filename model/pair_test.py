@@ -72,7 +72,7 @@ def main(df, confidence, outfilename='pair'):
     pair_sample_test_res = pair_sample_test(x, y, confidence)
     res = pd.concat([pair_sample_statistics_res, pair_sample_test_res])
     print(res)
-    res.to_csv('test_data/output/' + outfilename + '_res.csv', header=False)
+    res.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/' + outfilename + '_res.csv', header=False)
     return res
 
 if __name__=="__main__":
@@ -83,4 +83,4 @@ if __name__=="__main__":
     
     df, confidence = get_parameter()
     res = main(df, confidence)
-    cmd = "python pair_test.py --file_path ./test_data/input/pari_test.csv --confidence 0.95"     
+    cmd = "python pair_test.py --file_path C:/Users/YJ001/Desktop/project/algorithm/test_data/input/pari_test.csv --confidence 0.95"     

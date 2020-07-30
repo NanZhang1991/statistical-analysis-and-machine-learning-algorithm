@@ -24,11 +24,11 @@ def quantile_reg(df, quantile):
     mod = smf.quantreg(df.columns[1] + '~' + df.columns[0], df)
     res = mod.fit(q = quantile)
     print(res.summary())
-    get_y = lambda a, b: a + b * df.iloc[:,0].values
-    pre_y = get_y(res.params[0], res.params[1])
-    qre_df = pd.DataFrame(data = [[quantile, res.params[0], res.params[1], pre_y,] + res.conf_int().iloc[1].tolist()], 
+#    get_y = lambda a, b: a + b * df.iloc[:,0].values
+#    pre_y = get_y(res.params[0], res.params[1])
+    qre_df = pd.DataFrame(data = [[quantile, res.params[0], res.params[1]] + res.conf_int().iloc[1].tolist()], 
                                index = ['quantile_reg'], 
-                               columns = ['qt','intercept','x_coef','cf_lower_bound','cf_upper_bound','pre_y'])
+                               columns = ['qt','intercept','x_coef','cf_lower_bound','cf_upper_bound',])
     return qre_df 
 
 def get_parameter():
@@ -48,7 +48,7 @@ def get_parameter():
 def main(df, quantile, outfilename='qrg'):  
     res = quantile_reg(df, quantile)
     print(res)
-    res.to_csv('test_data/output/' + outfilename + '_res.csv', header=False)
+    res.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/' + outfilename + '_res.csv')
     return res
 
 
@@ -61,4 +61,4 @@ if __name__=="__main__":
     
     df, quantile = get_parameter()
     res = main(df, quantile)
-    cmd = "python quantile_reg.py --file_path ./test_data/input/qrg_test.csv --quantile 0.5"
+    cmd = "python quantile_reg.py --file_path C:/Users/YJ001/Desktop/project/algorithm/test_data/input/qrg_test.csv --quantile 0.5"

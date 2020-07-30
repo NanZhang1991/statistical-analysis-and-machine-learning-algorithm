@@ -73,7 +73,7 @@ def main(df, pop_mean, confidence, outfilename='sst'):
     single_sample_test_res = single_sample_test(dataSer,pop_mean,confidence)
     res = pd.concat([single_sample_statistics_res, single_sample_test_res])
     print(res)
-    res.to_csv('test_data/output/'+ outfilename + '_res.csv', header=False)
+    res.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/'+ outfilename + '_res.csv', header=False)
     return res
 
 
@@ -85,6 +85,6 @@ if __name__=="__main__":
     
     df, pop_mean, confidence = get_parameter()
     res = main(df, pop_mean, confidence)
-    cmd = "python single_sample_test.py --file_path ./test_data/input/ssg_test.csv --pop_mean 20 --confidence 0.95" 
+    cmd = "python single_sample_test.py --file_path C:/Users/YJ001/Desktop/project/algorithm/test_data/input/ssg_test.csv --pop_mean 20 --confidence 0.95" 
     
 
