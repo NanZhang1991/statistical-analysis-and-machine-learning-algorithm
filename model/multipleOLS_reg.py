@@ -66,7 +66,6 @@ def main(df, outfilename='mOLS'):
 
 if __name__=="__main__":
 
-    
     df = get_parameter()
     res = main(df)
     
