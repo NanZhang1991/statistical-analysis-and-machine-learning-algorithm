@@ -278,7 +278,7 @@ def get_parameter():
         df = pd.read_csv(file_path) 
     return df
 
-def main(df):
+def main(df, outfilename='fac'):
     # 将原始数据标准化处理 
     df2 = (df-df.mean())/df.std()  
     out_df2_corr = out_corr(df2)
@@ -290,6 +290,10 @@ def main(df):
     fs, fa_t_score, out_fs, out_fts = out_fs_fts(df2, load_matrix, a.columns)
     fac_total = pd.concat([out_df2_corr, out_Ade_df, out_eig, out_eig1, out_a, out_cfv ,out_var, out_load_matrix, out_fs])
     df3 = total_score(df,df2,m,var,fs)
+    fac_total.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/' + outfilename + '_bas.csv',index=False)
+    out_fts.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/' + outfilename + '_each.csv',index=False)
+    df3.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/' + outfilename + '_tscore.csv',index=False) 
+
     return fac_total, out_fts, df3
     
     
@@ -298,8 +302,5 @@ if __name__ == '__main__':
 #    local test 
     df = get_parameter()
     fac_total, out_fts, df3 =  main(df)
-    fac_total.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/fac_bas.csv',index=False)
-    out_fts.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/fac_each.csv',index=False)
-    df3.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/fac_tscore.csv',index=False) 
-    
+
     cmd = "python fa_analysis.py --file_path C:/Users/YJ001/Desktop/project/algorithm/test_data/input/fa_analysis.csv"
