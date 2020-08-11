@@ -54,26 +54,47 @@ Cohen's d > 0.8时，说明效应较大(差异幅度较大)。
 def get_parameter():
     print ("length:{}, content：{}".format(len(argv),argv))
     file_path = argv[argv.index('--file_path')+1]
-    try:
-        df = get_data_hdfs(file_path)
-    except Exception as e:
-        print(e,'Can not get data from hdfs, use test data from local' )
-        df = pd.read_csv(file_path)  #local test
+
     pop_mean = int(argv[argv.index('--pop_mean')+1])     
     if "--confidence" not in argv:        
         confidence = 0.95
     else:
         confidence = float("%.2f"%float(argv[argv.index('--confidence')+1])) 
-    return df, pop_mean, confidence
+    if "--outpath" not in argv:
+        outpath = None
+    else:
+        outpath = argv[argv.index('--outpath')+1]
+    return file_path, pop_mean, confidence, outpath
+
+
+def dataframe_write_to_hdfs(hdfs_path, dataframe):
+    """
+    :param client:
+    :param hdfs_path:
+    :param dataframe:
+    :return:
+    """
+    HDFSUrl = "http://192.168.0.201:50070"
+    client = Client(HDFSUrl, root='/')    
+    client.write(hdfs_path, dataframe.to_csv(header=False,index=False,sep="\t"), encoding='utf-8',overwrite=True)
+
         
-def main(df, pop_mean, confidence, outfilename='sst'):
+def main(file_path, pop_mean, confidence, outpath):
+    try:
+        df = get_data_hdfs(file_path)
+    except Exception as e:
+        print(e,'Can not get data from hdfs, use test data from local' )
+        df = pd.read_csv(file_path)  #local test     
     dataSer = df.iloc[:,0]
     print(dataSer.name)
     single_sample_statistics_res = single_sample_statistics(dataSer)
     single_sample_test_res = single_sample_test(dataSer,pop_mean,confidence)
     res = pd.concat([single_sample_statistics_res, single_sample_test_res])
     print(res)
-    res.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/'+ outfilename + '_res.csv', header=False)
+    if outpath != None:
+        dataframe_write_to_hdfs(outpath, res)
+    else:
+        res.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/sst_res.csv', header=False)
     return res
 
 
@@ -83,8 +104,8 @@ if __name__=="__main__":
 #    pop_mean, confidence =  20, 0.95 
 #    res = main(df, pop_mean, confidence)
     
-    df, pop_mean, confidence = get_parameter()
-    res = main(df, pop_mean, confidence)
+    file_path, pop_mean, confidence, outpath = get_parameter()
+    res = main(file_path, pop_mean, confidence, outpath)
     cmd = "python single_sample_test.py --file_path C:/Users/YJ001/Desktop/project/algorithm/test_data/input/ssg_test.csv --pop_mean 20 --confidence 0.95" 
     
 

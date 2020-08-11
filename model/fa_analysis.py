@@ -66,14 +66,7 @@ def bart(df):
     return statistic,pval
 ''''''
 
-def get_data_hdfs(file_path):    
-    HDFSUrl = "http://192.168.0.201:50070"
-    client = Client(HDFSUrl, root='/')
-    with client.read(file_path, buffer_size=1024, delimiter='\n', encoding='utf-8') as reader:
-        data = [line.strip().split() for line in reader]
-        print("data",data[0:5])
-    df = pd.DataFrame(data[1:],columns=data[0])
-    return df
+
 
 def out_corr(df2):
     # 皮尔森相关系数
@@ -243,17 +236,18 @@ def out_fs_fts(df2, load_matrix, a_columns):
     print(out_fts)
     return fs, fa_t_score, out_fs, out_fts 
 
+#各主成分得分
 def get_Fac_score(df2,columns,n,fs):
     means = df2.mean()
     stds = df2.std()
     arr = fs.iloc[:,n]
     sum=0
     for column in columns:
-        sum=sum+(df[column ]-means[column])/(stds[column])*arr[column]
-    return sum    
+        sum=sum+(df2[column ]-means[column])/(stds[column])*arr[column]
+    return sum
 
+#综合得分：
 def total_score(df,df2,m,var,fs):
-    # 各主成分得分
     # F=(成分1*贡献率1+成分2*贡献率2+….+成分4*贡献率4)/累计贡献率：
     df3 = df2.copy()
     total = 0
@@ -262,23 +256,54 @@ def total_score(df,df2,m,var,fs):
         total = total + df3['FAC'+ str(n+1)]*var[1][n]
     df3['FAC'] = total/var[2][m-1]  
         
-    FAC = df3.apply(lambda x:(x['FAC1']*var[1][0]+x['FAC2']*var[1][1]+
-               x['FAC3'] * var[1][2]+x['FAC4']*var[1][3]+x['FAC5']*var[1][4]+
-               x['FAC6']*var[1][5])/var[2][5], axis=1)
+#    FAC = df3.apply(lambda x:(x['FAC1']*var[1][0]+x['FAC2']*var[1][1]+
+#               x['FAC3'] * var[1][2]+x['FAC4']*var[1][3]+x['FAC5']*var[1][4]+
+#               x['FAC6']*var[1][5])/var[2][5], axis=1)
     
-    return df3
+    total_name = pd.DataFrame([[None],['综合得分']])
+    total_header = pd.DataFrame([df3.columns])
+    total_data = pd.DataFrame(df3.values)
+    total = pd.concat([total_name, total_header, total_data])
+       
+    print('综合得分',total)
+    return total
 
 def get_parameter():
     print ("length:{}, content：{}".format(len(argv),argv))
     file_path = argv[argv.index('--file_path')+1]
+    if "--outpath" not in argv:
+        outpath = None
+    else:
+        outpath = argv[argv.index('--outpath')+1]
+    return file_path, outpath
+
+def get_data_hdfs(file_path):    
+    HDFSUrl = "http://192.168.0.201:50070"
+    client = Client(HDFSUrl, root='/')
+    with client.read(file_path, buffer_size=1024, delimiter='\n', encoding='utf-8') as reader:
+        data = [line.strip().split() for line in reader]
+        print("data",data[0:5])
+    df = pd.DataFrame(data[1:],columns=data[0])
+    return df
+
+def dataframe_write_to_hdfs(hdfs_path, dataframe):
+    """
+    :param client:
+    :param hdfs_path:
+    :param dataframe:
+    :return:
+    """
+    HDFSUrl = "http://192.168.0.201:50070"
+    client = Client(HDFSUrl, root='/')    
+    client.write(hdfs_path, dataframe.to_csv(header=False,index=False,sep="\t"), encoding='utf-8',overwrite=True)
+
+
+def main(file_path, outpath):
     try:
         df = get_data_hdfs(file_path)
     except Exception as e:
         print(e,'Can not get data from hdfs, use test data from local' )
         df = pd.read_csv(file_path) 
-    return df
-
-def main(df, outfilename='fac'):
     # 将原始数据标准化处理 
     df2 = (df-df.mean())/df.std()  
     out_df2_corr = out_corr(df2)
@@ -289,18 +314,20 @@ def main(df, outfilename='fac'):
     load_matrix, out_load_matrix = _out_load_matrix(df2, a.columns, m)
     fs, fa_t_score, out_fs, out_fts = out_fs_fts(df2, load_matrix, a.columns)
     fac_total = pd.concat([out_df2_corr, out_Ade_df, out_eig, out_eig1, out_a, out_cfv ,out_var, out_load_matrix, out_fs])
-    df3 = total_score(df,df2,m,var,fs)
-    fac_total.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/' + outfilename + '_bas.csv',index=False)
-    out_fts.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/' + outfilename + '_each.csv',index=False)
-    df3.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/' + outfilename + '_tscore.csv',index=False) 
+    total_s = total_score(df,df2,m,var,fs)
+    total = pd.concat([fac_total, out_fts, total_s])
+    if outpath != None:
+        dataframe_write_to_hdfs(outpath, total)
+    else:
+        total.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/fac.csv',index=False)
 
-    return fac_total, out_fts, df3
+    return total
     
     
 if __name__ == '__main__':
 #    df=pd.read_csv("C:/Users/YJ001/Desktop/project/algorithm/test_data/input/fa_analysis.csv")
 #    local test 
-    df = get_parameter()
-    fac_total, out_fts, df3 =  main(df)
+    file_path, outpath = get_parameter()
+    total = main(file_path, outpath)
 
     cmd = "python fa_analysis.py --file_path C:/Users/YJ001/Desktop/project/algorithm/test_data/input/fa_analysis.csv"
