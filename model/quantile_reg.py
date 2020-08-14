@@ -10,16 +10,6 @@ from sys import argv
 from hdfs.client import Client
 
 
-def get_data_hdfs(file_path):    
-    HDFSUrl = "http://192.168.0.201:50070"
-    client = Client(HDFSUrl, root='/')
-    with client.read(file_path, buffer_size=1024, delimiter='\n', encoding='utf-8') as reader:
-        data = [line.strip().split() for line in reader]
-        print("data",data[0:5])
-    df = pd.DataFrame(data[1:],columns=data[0])
-    return df
-
-
 def quantile_reg(df, quantile):
     mod = smf.quantreg(df.columns[1] + '~' + df.columns[0], df)
     res = mod.fit(q = quantile)
@@ -34,23 +24,51 @@ def quantile_reg(df, quantile):
 def get_parameter():
     print ("length:{}, content：{}".format(len(argv),argv))
     file_path = argv[argv.index('--file_path')+1]
-    try:
-        df = get_data_hdfs(file_path)
-    except Exception as e:
-        print(e,'Can not get data from hdfs, use test data from local' )
-        df = pd.read_csv(file_path)  #  
+  
     if "--quantile" not in argv:        
         quantile = 0.5
     else:
         quantile = float("%.1f"%float(argv[argv.index('--quantile')+1])) 
-    return df, quantile
+    if "--outpath" not in argv:
+        outpath = None
+    else:
+        outpath = argv[argv.index('--outpath')+1]    
+    return file_path, quantile, outpath
 
-def main(df, quantile, outfilename='qrg'):  
+def get_data_hdfs(file_path):    
+    HDFSUrl = "http://192.168.0.201:50070"
+    client = Client(HDFSUrl, root='/')
+    with client.read(file_path, buffer_size=1024, delimiter='\n', encoding='utf-8') as reader:
+        data = [line.strip().split() for line in reader]
+        print("data",data[0:5])
+    df = pd.DataFrame(data[1:],columns=data[0])
+    return df
+
+def dataframe_write_to_hdfs(hdfs_path, dataframe):
+    """
+    :param client:
+    :param hdfs_path:
+    :param dataframe:
+    :return:
+    """
+    HDFSUrl = "http://192.168.0.201:50070"
+    client = Client(HDFSUrl, root='/')    
+    client.write(hdfs_path, dataframe.to_csv(header=False,index=False,sep="\t"), encoding='utf-8',overwrite=True)
+    
+def main(file_path, quantile, outpath): 
+    try:
+        df = get_data_hdfs(file_path)
+    except Exception as e:
+        print(e,'Can not get data from hdfs, use test data from local' )
+        df = pd.read_csv(file_path)  #
     res = quantile_reg(df, quantile)
     print(res)
-    res.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/' + outfilename + '_res.csv')
+    if outpath != None:
+        dataframe_write_to_hdfs(outpath, res)
+    else:
+        res.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/qrg_res.csv')
     return res
-
+ 
 
 
 if __name__=="__main__":
@@ -59,6 +77,6 @@ if __name__=="__main__":
 #    quantile =.5
 #    res = main(df, quantile)
     
-    df, quantile = get_parameter()
-    res = main(df, quantile)
+    file_path, quantile, outpath = get_parameter()
+    res = main(file_path, quantile, outpath)
     cmd = "python quantile_reg.py --file_path C:/Users/YJ001/Desktop/project/algorithm/test_data/input/qrg_test.csv --quantile 0.5"

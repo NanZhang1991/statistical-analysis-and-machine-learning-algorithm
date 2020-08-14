@@ -13,15 +13,6 @@ from sys import argv
 from hdfs.client import Client
 
 
-def get_data_hdfs(file_path):    
-    HDFSUrl = "http://192.168.0.201:50070"
-    client = Client(HDFSUrl, root='/')
-    with client.read(file_path, buffer_size=1024, delimiter='\n', encoding='utf-8') as reader:
-        data = [line.strip().split() for line in reader]
-        print("data",data[0:5])
-    df = pd.DataFrame(data[1:],columns=data[0])
-    return df
-
 def group_statistics(x, y):      
     result = pd.DataFrame([['N', '均值', '标准差', '均值的标准误'], 
                            [x.shape[0], x.mean(), x.std(), stats.sem(x)],
@@ -59,29 +50,60 @@ def independent_sample_test(x, y, confidence=0.95):
                            index=['独立样本检验', '假设方差相等', '假设方差不相等'])    
     return result 
 
+
+
 def get_parameter():
     print ("length:{}, content：{}".format(len(argv),argv))
     file_path = argv[argv.index('--file_path')+1]
-    try:
-        df = get_data_hdfs(file_path)
-    except Exception as e:
-        print(e,'Can not get data from hdfs, use test data from local' )
-        df = pd.read_csv(file_path)  #  
     if "--confidence" not in argv:        
         confidence = 0.95
     else:
         confidence = float("%.2f"%float(argv[argv.index('--confidence')+1])) 
-    return df, confidence
+    if "--outpath" not in argv:
+        outpath = None
+    else:
+        outpath = argv[argv.index('--outpath')+1]    
+    return file_path, confidence, outpath
 
-def main(df, confidence, outfilename='ind'):  
+def get_data_hdfs(file_path):    
+    HDFSUrl = "http://192.168.0.201:50070"
+    client = Client(HDFSUrl, root='/')
+    with client.read(file_path, buffer_size=1024, delimiter='\n', encoding='utf-8') as reader:
+        data = [line.strip().split(',') for line in reader]
+        print("data",data[0:5])
+    df = pd.DataFrame(data[1:],columns=data[0])
+    return df
+
+def dataframe_write_to_hdfs(hdfs_path, dataframe):
+    """
+    :param client:
+    :param hdfs_path:
+    :param dataframe:
+    :return:
+    """
+    HDFSUrl = "http://192.168.0.201:50070"
+    client = Client(HDFSUrl, root='/')    
+    client.write(hdfs_path, dataframe.to_csv(header=False,index=False,sep="\t"), encoding='utf-8',overwrite=True)
+
+def main(file_path, confidence, outpath):  
+    try:
+        df = get_data_hdfs(file_path)
+    except Exception as e:
+        print(e,'Can not get data from hdfs, use test data from local' )
+        df = pd.read_csv(file_path)  #      
     x = df.iloc[:,0]
     y = df.iloc[:,1]
     gs_res = group_statistics(x,y)
     ist_res = independent_sample_test(x, y, confidence)
     res = pd.concat([gs_res, ist_res])
     print(res)
-    res.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/' + outfilename + '_res.csv', header=False)
+    if outpath != None:
+        dataframe_write_to_hdfs(outpath, res)
+    else:
+        res.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/ind_res.csv',header=False)
     return res
+
+
 
 
 if __name__=="__main__":
@@ -90,6 +112,6 @@ if __name__=="__main__":
 #    confidence =  0.95     
 #    res = main(df, confidence)
     
-    df, confidence = get_parameter()
-    res = main(df, confidence)
+    file_path, confidence, outpath = get_parameter()
+    res = main(file_path, confidence, outpath)
     cmd = "python independent_test.py --file_path C:/Users/YJ001/Desktop/project/algorithm/test_data/input/independent_test.csv --confidence 0.95" 

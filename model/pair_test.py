@@ -10,14 +10,6 @@ from sys import argv
 from hdfs.client import Client
 
 
-def get_data_hdfs(file_path):    
-    HDFSUrl = "http://192.168.0.201:50070"
-    client = Client(HDFSUrl, root='/')
-    with client.read(file_path, buffer_size=1024, delimiter='\n', encoding='utf-8') as reader:
-        data = [line.strip().split() for line in reader]
-        print("data",data[0:5])
-    df = pd.DataFrame(data[1:],columns=data[0])
-    return df
 
 data = pd.DataFrame({'x':[20.5, 18.8, 19.8, 20.9, 21.5, 19.5, 21.0, 21.2],'y':[17.7, 20.3, 20.0, 18.8, 19.0, 20.1, 20.0, 19.1]})
 
@@ -53,26 +45,52 @@ def pair_sample_test(x, y,confidence=0.95):
 def get_parameter():
     print ("length:{}, content：{}".format(len(argv),argv))
     file_path = argv[argv.index('--file_path')+1]     
+    if "--confidence" not in argv:        
+        confidence = 0.95
+    else:
+        confidence = float("%.2f"%float(argv[argv.index('--confidence')+1])) 
+    if "--outpath" not in argv:
+        outpath = None
+    else:
+        outpath = argv[argv.index('--outpath')+1]    
+    return file_path, confidence, outpath
+
+def get_data_hdfs(file_path):    
+    HDFSUrl = "http://192.168.0.201:50070"
+    client = Client(HDFSUrl, root='/')
+    with client.read(file_path, buffer_size=1024, delimiter='\n', encoding='utf-8') as reader:
+        data = [line.strip().split(',') for line in reader]
+        print("data",data[0:5])
+    df = pd.DataFrame(data[1:],columns=data[0])
+    return df
+
+def dataframe_write_to_hdfs(hdfs_path, dataframe):
+    """
+    :param client:
+    :param hdfs_path:
+    :param dataframe:
+    :return:
+    """
+    HDFSUrl = "http://192.168.0.201:50070"
+    client = Client(HDFSUrl, root='/')    
+    client.write(hdfs_path, dataframe.to_csv(header=False,index=False,sep="\t"), encoding='utf-8',overwrite=True)
+    
+def main(file_path, confidence, outpath):
     try:
         df = get_data_hdfs(file_path)
     except Exception as e:
         print(e,'Can not get data from hdfs, use test data from local' )
         df = pd.read_csv(file_path)  #
-    if "--confidence" not in argv:        
-        confidence = 0.95
-    else:
-        confidence = float("%.2f"%float(argv[argv.index('--confidence')+1])) 
-    return df, confidence
-
-def main(df, confidence, outfilename='pair'):
-
     x = df.iloc[:,0]
     y = df.iloc[:,1]
     pair_sample_statistics_res = pair_sample_statistics(x,y)
     pair_sample_test_res = pair_sample_test(x, y, confidence)
     res = pd.concat([pair_sample_statistics_res, pair_sample_test_res])
     print(res)
-    res.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/' + outfilename + '_res.csv', header=False)
+    if outpath != None:
+        dataframe_write_to_hdfs(outpath, res)
+    else:
+        res.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/pair_res.csv', header=False)
     return res
 
 if __name__=="__main__":
@@ -81,6 +99,6 @@ if __name__=="__main__":
 #    confidence = 0.95 
 #    res = main(df, confidence)  
     
-    df, confidence = get_parameter()
-    res = main(df, confidence)
+    file_path, confidence, outpath = get_parameter()
+    res = main(file_path, confidence, outpath)
     cmd = "python pair_test.py --file_path C:/Users/YJ001/Desktop/project/algorithm/test_data/input/pari_test.csv --confidence 0.95"     

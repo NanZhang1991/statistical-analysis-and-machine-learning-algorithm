@@ -17,16 +17,6 @@ from sys import argv
 from hdfs.client import Client
 
 
-def get_data_hdfs(file_path):    
-    HDFSUrl = "http://192.168.0.201:50070"
-    client = Client(HDFSUrl, root='/')
-    with client.read(file_path, buffer_size=1024, delimiter='\n', encoding='utf-8') as reader:
-        data = [line.strip().split() for line in reader]
-        print("data",data[0:5])
-    df = pd.DataFrame(data[1:],columns=data[0])
-    return df
-
-
 def unaryOLS(df):
     x = df.iloc[:,0]
     y = df.iloc[:,1]
@@ -44,17 +34,44 @@ def unaryOLS(df):
 def get_parameter():
     print ("length:{}, content：{}".format(len(argv),argv))
     file_path = argv[argv.index('--file_path')+1]
+    if "--outpath" not in argv:
+        outpath = None
+    else:
+        outpath = argv[argv.index('--outpath')+1]
+    return file_path, outpath
+
+def get_data_hdfs(file_path):    
+    HDFSUrl = "http://192.168.0.201:50070"
+    client = Client(HDFSUrl, root='/')
+    with client.read(file_path, buffer_size=1024, delimiter='\n', encoding='utf-8') as reader:
+        data = [line.strip().split(',') for line in reader]
+        print("data",data[0:5])
+    df = pd.DataFrame(data[1:],columns=data[0])
+    return df
+
+def dataframe_write_to_hdfs(hdfs_path, dataframe):
+    """
+    :param client:
+    :param hdfs_path:
+    :param dataframe:
+    :return:
+    """
+    HDFSUrl = "http://192.168.0.201:50070"
+    client = Client(HDFSUrl, root='/')    
+    client.write(hdfs_path, dataframe.to_csv(header=False,index=False,sep="\t"), encoding='utf-8',overwrite=True)
+    
+def main(file_path, outpath):  
     try:
         df = get_data_hdfs(file_path)
     except Exception as e:
         print(e,'Can not get data from hdfs, use test data from local' )
         df = pd.read_csv(file_path) 
-    return df
-
-def main(df, outfilename='uOLS'):  
     res = unaryOLS(df)
-    print(res)
-    res.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/' + outfilename + '_res.csv')
+    print(res)    
+    if outpath != None:
+        dataframe_write_to_hdfs(outpath, res)
+    else:
+        res.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/uOLS_res.csv')
     return res
 
 
@@ -79,8 +96,8 @@ P>|t| :t检验的p值，如果p值小于0.05 那么我们就认为变量是显�
 if __name__=="__main__":
 
     
-    df = get_parameter()
-    res = main(df)
+    file_path, outpath = get_parameter()
+    res = main(file_path, outpath)
     
 #    local test 
     cmd = "python unaryOLS_reg.py --file_path C:/Users/YJ001/Desktop/project/algorithm/test_data/input/unary_OLS.csv"

@@ -281,7 +281,7 @@ def get_data_hdfs(file_path):
     HDFSUrl = "http://192.168.0.201:50070"
     client = Client(HDFSUrl, root='/')
     with client.read(file_path, buffer_size=1024, delimiter='\n', encoding='utf-8') as reader:
-        data = [line.strip().split() for line in reader]
+        data = [line.strip().split(',') for line in reader]
         print("data",data[0:5])
     df = pd.DataFrame(data[1:],columns=data[0])
     return df
@@ -319,14 +319,13 @@ def main(file_path, outpath):
     if outpath != None:
         dataframe_write_to_hdfs(outpath, total)
     else:
-        total.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/fac.csv',index=False)
+        total.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/fac_res.csv',index=False)
 
     return total
     
     
 if __name__ == '__main__':
-#    df=pd.read_csv("C:/Users/YJ001/Desktop/project/algorithm/test_data/input/fa_analysis.csv")
-#    local test 
+
     file_path, outpath = get_parameter()
     total = main(file_path, outpath)
 

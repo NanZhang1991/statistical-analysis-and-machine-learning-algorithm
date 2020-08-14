@@ -8,14 +8,6 @@ from sys import argv
 from hdfs.client import Client
 
 
-def get_data_hdfs(file_path):    
-    HDFSUrl = "http://192.168.0.201:50070"
-    client = Client(HDFSUrl, root='/')
-    with client.read(file_path, buffer_size=1024, delimiter='\n', encoding='utf-8') as reader:
-        data = [line.strip().split() for line in reader]
-        print("data",data[0:5])
-    df = pd.DataFrame(data[1:],columns=data[0])
-    return df
 
 def single_sample_statistics(dataSer):
     result = pd.DataFrame([['N','均值','标准差','均值的标准误', ],
@@ -66,6 +58,14 @@ def get_parameter():
         outpath = argv[argv.index('--outpath')+1]
     return file_path, pop_mean, confidence, outpath
 
+def get_data_hdfs(file_path):    
+    HDFSUrl = "http://192.168.0.201:50070"
+    client = Client(HDFSUrl, root='/')
+    with client.read(file_path, buffer_size=1024, delimiter='\n', encoding='utf-8') as reader:
+        data = [line.strip().split(',') for line in reader]
+        print("data",data[0:5])
+    df = pd.DataFrame(data[1:],columns=data[0])
+    return df
 
 def dataframe_write_to_hdfs(hdfs_path, dataframe):
     """
