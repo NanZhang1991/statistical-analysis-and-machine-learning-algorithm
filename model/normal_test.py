@@ -131,10 +131,7 @@ def main(file_path, outpath):
     
     
 if __name__=="__main__":
-#    local test 
-#    df = pd.DataFrame({'x':np.linspace(0, 10, 100)})
-#    res = main(df)   
-    
+
     file_path, outpath = get_parameter()
     res = main(file_path, outpath)
     cmd = "python normal_test.py --file_path C:/Users/YJ001/Desktop/project/algorithm/test_data/input/normal_test.csv"    

@@ -94,11 +94,7 @@ def main(file_path, confidence, outpath):
     return res
 
 if __name__=="__main__":
-#    local test 
-#    df = pd.DataFrame({'x':[20.5, 18.8, 19.8, 20.9, 21.5, 19.5, 21.0, 21.2],'y':[17.7, 20.3, 20.0, 18.8, 19.0, 20.1, 20.0, 19.1]})
-#    confidence = 0.95 
-#    res = main(df, confidence)  
-    
+
     file_path, confidence, outpath = get_parameter()
     res = main(file_path, confidence, outpath)
     cmd = "python pair_test.py --file_path C:/Users/YJ001/Desktop/project/algorithm/test_data/input/pari_test.csv --confidence 0.95"     
