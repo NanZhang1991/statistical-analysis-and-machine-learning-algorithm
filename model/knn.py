@@ -23,8 +23,8 @@ def classify0(inX, dataSet, labels, k):
     diffMat = np.tile(inX, (dataSetSize,1)) - dataSet
     sqDiffMat = diffMat**2
     sqDistances = sqDiffMat.sum(axis=1)  
-    distances = sqDistances**0.5
     sortedDistIndicies = distances.argsort()
+    distances = sqDistances**0.5
     classCount={}
     """Voting with lowest k distances"""
     for i in range(k):
