@@ -32,9 +32,10 @@ def DFT(time_series):
         dfoutput['Critical Value (%s)'%key] = value
     return dfoutput
 
-#差分序列的白噪声检验结果为：
+#差分序列的白噪声检验,若P值小于0.05，所以一阶差分后的序列为平稳非白噪声序列
 def alx(time_series, lag=1):
-    return acorr_ljungbox(time_series, lags=lag)
+    p_value = acorr_ljungbox(time_series, lags=lag)
+    return p_value
 
 # 自相关和偏相关图
 def draw_acf_pacf(time_series):
@@ -88,8 +89,6 @@ def ts_decomposition(time_series_log):
     seasonal = decomposition.seasonal
     residual = decomposition.resid 
     return trend, seasonal, residual
-
-
 
 #定阶
 def get_pq():
