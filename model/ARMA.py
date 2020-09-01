@@ -17,13 +17,13 @@ from statsmodels.tsa.seasonal import seasonal_decompose
 
 
 
-def draw_ts(timeSeries):
+def draw_ts(time_series):
     f = plt.figure(facecolor='white')
-    timeSeries.plot(color='blue')
+    time_series.plot(color='blue')
     plt.show()
 
 
-#单位根检验（Dickey-Fuller test）
+#单位根检验（Dickey-Fuller test） 若P值大于0.05接受原假设存在单位根 不平稳
 def DFT(time_series):
     dftest = adfuller(time_series)  # ADF检验
   # 对上述函数求得的值进行语义描述
@@ -32,7 +32,7 @@ def DFT(time_series):
         dfoutput['Critical Value (%s)'%key] = value
     return dfoutput
 
-#差分序列的白噪声检验,若P值小于0.05，所以一阶差分后的序列为平稳非白噪声序列
+#差分序列的白噪声检验,若P值小于0.05，则一阶差分后的序列为平稳非白噪声序列
 def alx(time_series, lag=1):
     p_value = acorr_ljungbox(time_series, lags=lag)
     return p_value
@@ -59,14 +59,14 @@ def ts_log(time_series):
     return(time_series)
 #b.平滑法
 # 移动平均图
-def draw_trend(timeSeries, size):
+def draw_trend(time_series, size):
     f = plt.figure(facecolor='white')
     # 对size个数据进行移动平均
-    rol_mean = timeSeries.rolling(window=size).mean()
+    rol_mean = time_series.rolling(window=size).mean()
     # 对size个数据进行加权移动平均
-    rol_weighted_mean = pd.ewma(timeSeries, span=size)
+    rol_weighted_mean = pd.DataFrame.ewm(time_series, span=size).mean()
 
-    timeSeries.plot(color='blue', label='Original')
+    time_series.plot(color='blue', label='Original')
     rol_mean.plot(color='red', label='Rolling Mean')
     rol_weighted_mean.plot(color='black', label='Weighted Rolling Mean')
     plt.legend(loc='best')
@@ -91,7 +91,7 @@ def ts_decomposition(time_series_log):
     return trend, seasonal, residual
 
 #定阶
-def get_pq():
+def get_pq(ts_diff):
     pmax = int(len(ts_diff)/10) #一般阶数不超过length/10
     qmax = int(len(ts_diff)/10) #一般阶数不超过length/10
     bic_matrix = [] #bic矩阵
@@ -112,18 +112,21 @@ def get_pq():
 
 
 
-def ts_arma(ts, p, q):
+def ts_arma(ts, p, q, start,end):
     arma = ARMA(ts, order=(p, q)).fit(disp = -1)
-    ts_predict_arma = arma.predict()
+    print("未来五年:", arma.forecast(5)[0])
+    ts_predict_arma = arma.predict(start,end)
     print(arma.summary())
     return ts_predict_arma
     
 # 加入差分的 ARMA 模型
 def ts_arima(ts,p,d,q,start,end):
-    arima = ARIMA(ts,(p,d,q,start,end)).fit(disp=-1,maxiter=100)
+    arima = ARIMA(ts, order=(p,d,q)).fit(disp=-1,maxiter=100)
+    print("未来五年:", arima.forecast(5)[0])
     print(arima.summary())
     ts_predict_arima = arima.predict(start,end, dynamic = False)
     return ts_predict_arima
+
 
 if __name__ =="__main__":
     time_series = pd.Series([151.0, 188.46, 199.38, 219.75, 241.55, 262.58, 328.22, 
@@ -132,3 +135,55 @@ if __name__ =="__main__":
                          3114.02, 3229.29, 3545.39, 3880.53, 4212.82, 4757.45, 
                          5633.24, 6590.19, 7617.47, 9333.4, 11328.92, 12961.1, 15967.61])
     time_series.index = pd.Index(pd.period_range(1978,2010,freq='Y'))
+    draw_ts(time_series)
+    dfoutput = DFT(time_series)
+    w_p = alx(time_series, lag=1)
+    ts_l = ts_log(time_series)
+    draw_trend(ts_l, 12)
+    #从上图可以发现窗口为12的移动平均能较好的剔除年周期性因素，而指数平均法是对周期内的数据进行了加权，
+    #能在一定程度上减小年周期因素，但并不能完全剔除，如要完全剔除可以进一步进行差分操作。
+    draw_ts(ts_l)
+    
+    diff_12 = ts_diff(ts_l,12)
+    diff_12_12 = ts_diff(diff_12, 12)
+    dfoutput2 = DFT(diff_12_12)
+    p,q = get_pq(time_series)
+
+#对于年周期成分我们使用窗口为12的移动平进行处理，
+#对于长期趋势成分我们采用1阶差分来进行处理。    
+    rol_mean = ts_l.rolling(window=3).mean()
+    rol_mean.dropna(inplace=True)
+    ts_diff_1 = rol_mean.diff(1)
+    ts_diff_1.dropna(inplace=True)
+    dfoutput3 = DFT(ts_diff_1) 
+    
+    ts_diff_2 = ts_diff_1.diff(1)
+    ts_diff_2.dropna(inplace=True)
+    dfoutput4 = DFT(ts_diff_2) 
+    
+    ts_predict_arma = ARMA(ts_diff_2, order=(p, q)).fit(disp = -1)
+    predict_ts = ts_predict_arma.predict()
+    # 一阶差分还原
+    diff_shift_ts = ts_diff_1.shift(1)
+    diff_recover_1 = predict_ts.add(diff_shift_ts)
+    # 再次一阶差分还原
+    rol_shift_ts = rol_mean.shift(1)
+    diff_recover = diff_recover_1.add(rol_shift_ts)
+    # 移动平均还原
+    rol_sum = ts_l.rolling(window=2).sum()
+    rol_recover = diff_recover*3 - rol_sum.shift(1)
+    # 对数还原
+    log_recover = np.exp(rol_recover)
+    log_recover.dropna(inplace=True)
+    
+    #均方根误差（RMSE）来评估模型样本内拟合的好坏。利用该准则进行判别时，需要剔除“非预测”数据的影响。
+    ts = time_series[log_recover.index]  # 过滤没有预测的记录
+    plt.figure(facecolor='white')
+    log_recover.plot(color='blue', label='Predict')
+    ts.plot(color='red', label='Original')
+    plt.legend(loc='best')
+    plt.title('RMSE: %.4f'% np.sqrt(sum((log_recover-ts)**2)/ts.size))
+    plt.show()
+
+    d = 0
+    ts_predict_arima = ts_arima(time_series,p,d,q,'1980', '1985')
