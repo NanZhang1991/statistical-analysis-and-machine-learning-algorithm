@@ -313,14 +313,13 @@ def main(file_path, outpath):
     cfv, var, out_cfv ,out_var =  _out_cfv_var(df2, a.columns, m)
     load_matrix, out_load_matrix = _out_load_matrix(df2, a.columns, m)
     fs, fa_t_score, out_fs, out_fts = out_fs_fts(df2, load_matrix, a.columns)
-    fac_total = pd.concat([out_df2_corr, out_Ade_df, out_eig, out_eig1, out_a, out_cfv ,out_var, out_load_matrix, out_fs])
+    fac_total = pd.concat([out_df2_corr, out_Ade_df, out_eig, out_eig1, out_a, out_cfv ,out_var, out_load_matrix, out_fs, out_fts])
     total_s = total_score(df,df2,m,var,fs)
     total = pd.concat([fac_total, out_fts, total_s])
     if outpath != None:
         dataframe_write_to_hdfs(outpath, total)
     else:
         total.to_csv('C:/Users/YJ001/Desktop/project/algorithm/test_data/output/fac_res.csv',index=False)
-
     return total
     
     
